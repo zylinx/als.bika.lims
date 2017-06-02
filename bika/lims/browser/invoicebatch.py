@@ -110,12 +110,6 @@ class InvoiceBatchInvoicesView(BikaListingView):
 
 class BatchFolderExportCSV(InvoiceBatchInvoicesView):
     def __call__(self, REQUEST, RESPONSE):
-        """Export invoice batch into csv format.
-        Writes the csv file into the response to allow
-        the file to be streamed to the user.
-        Nothing gets returned.
-        """
-
         delimiter = ','
         filename = 'invoice_batch.txt'
         # Getting the invoice batch
@@ -127,80 +121,74 @@ class BatchFolderExportCSV(InvoiceBatchInvoicesView):
         if not len(invoices):
             container.plone_log("InvoiceBatch contains no entries")
 
-        csv_rows = [['Invoice Batch']]
-        # Invoice batch header
-        csv_rows.append(
-            ['ID', container.getId()])
-        csv_rows.append(
-            ['Invoice Batch Title', container.title])
-        csv_rows.append(
-            ['Start Date', container.getBatchStartDate().strftime('%Y-%m-%d')])
-        csv_rows.append(
-            ['End Date', container.getBatchEndDate().strftime('%Y-%m-%d')])
-        csv_rows.append([])
-
-        # Building the invoice field header
-        csv_rows.append(['Invoices'])
-        csv_rows.append([
-            'Invoice ID',
-            'Client ID',
-            'Client Name',
-            'Account Num.',
-            'Phone',
-            'Date',
-            'Total Price'
-        ])
-        invoices_items_rows = []
-        currency = currency_format(self.context, 'en')
+        rows = []
+        _ordNum = ''
         for invoice in invoices:
-            # Building the invoice field header
-            invoice_info_header = [
-                invoice.getId(),
-                invoice.getClient().getId(),
-                invoice.getClient().getName(),
-                invoice.getClient().getAccountNumber(),
-                invoice.getClient().getPhone(),
-                invoice.getInvoiceDate().strftime('%Y-%m-%d'),
-                currency(invoice.getTotal()),
-            ]
-            csv_rows.append(invoice_info_header)
-            # Obtaining and sorting all analysis items.
-            # These analysis are saved inside a list to add later
+            new_invoice = True
+            _invNum     = "%s" % invoice.getId()
+            _clientNum  = "%s" % invoice.getClient().getAccountNumber()
+            _invDate    = "%s" % invoice.getInvoiceDate().strftime('%d/%m/%Y')
+            _monthNum = invoice.getInvoiceDate().month()
+            if _monthNum < 7:
+                _periodNum = _monthNum + 6
+            else:
+                _periodNum = _monthNum - 6
+            _periodNum  = "%s" % _monthNum
+
+            _message1 = ''
+            _message2 = ''
+            _message3 = ''
+
             items = invoice.invoice_lineitems
             mixed = [(item.get('OrderNumber', ''), item) for item in items]
             mixed.sort()
-            # Defining each analysis row
-            for line in mixed:
-                invoice_analysis = [
-                    line[1].get('ItemDate', ''),
-                    line[1].get('ItemDescription', ''),
-                    line[1].get('OrderNumber', ''),
-                    line[1].get('Subtotal', ''),
-                    line[1].get('VATAmount', ''),
-                    line[1].get('Total', ''),
-                ]
-                invoices_items_rows.append(invoice_analysis)
+            lines = [t[1] for t in mixed]
 
-        csv_rows.append([])
-        # Creating analysis items header
-        csv_rows.append(['Invoices items'])
-        csv_rows.append(['Date', 'Description', 'Order', 'Amount', 'VAT',
-                         'Amount incl. VAT'])
-        # Adding all invoices items
-        for item_row in invoices_items_rows:
-            csv_rows.append(item_row)
+            #iterate through each invoice line
+            for line in lines:
+                if new_invoice or line.get('OrderNumber', '') != _ordNum:
+                    new_invoice = False
+                    _ordNum  = line.get('OrderNumber', '')
 
-        # convert lists to csv string
+                    #create header csv entry as a list
+                    header = [ \
+                        "Header", _invNum, " ", " ", _clientNum, _periodNum, \
+                        _invDate, _ordNum, "N", 0, _message1,  _message2, \
+                        _message3, "", "", "", "", "", "", 0, "", "", "", "", \
+                        0, "", "", "N"]
+                    rows.append(header)
+
+                _quant = 1
+                _unitp = format(line.get('Subtotal'),'.2f')
+                _inclp = format(line.get('Total'),'.2f')
+                _item = line.get('ItemDescription', '')
+                _desc  = "Analysis: %s" %_item[:40]
+                if _item.startswith('Water') or _item.startswith('water'):
+                    _icode = "2"
+                else:
+                    _icode = "1"
+                _ltype = "4"
+                _ccode = ""
+
+                #create detail csv entry as a list
+                detail = ["Detail", 0, _quant, _unitp, _inclp,\
+                          "", "1", "0", "0", _icode, _desc,\
+                          _ltype, _ccode, ""]
+                rows.append(detail)
+
+        #convert lists to csv string
         ramdisk = StringIO()
         writer = csv.writer(ramdisk, delimiter=delimiter)
-        assert writer
-        writer.writerows(csv_rows)
+        assert(writer)
+
+        writer.writerows(rows)
         result = ramdisk.getvalue()
         ramdisk.close()
-        # stream file to browser
+
+        #stream file to browser
         setheader = RESPONSE.setHeader
-        setheader('Content-Length', len(result))
+        setheader('Content-Length',len(result))
         setheader('Content-Type',
-                  'text/x-comma-separated-values')
+            'text/x-comma-separated-values')
         setheader('Content-Disposition', 'inline; filename=%s' % filename)
         RESPONSE.write(result)
