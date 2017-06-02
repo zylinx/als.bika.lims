@@ -180,15 +180,13 @@ class BatchFolderExportCSV(InvoiceBatchInvoicesView):
         ramdisk = StringIO()
         writer = csv.writer(ramdisk, delimiter=delimiter)
         assert(writer)
-
         writer.writerows(rows)
         result = ramdisk.getvalue()
         ramdisk.close()
-
         #stream file to browser
         setheader = RESPONSE.setHeader
-        setheader('Content-Length',len(result))
+        setheader('Content-Length', len(result))
         setheader('Content-Type',
-            'text/x-comma-separated-values')
+                  'text/x-comma-separated-values')
         setheader('Content-Disposition', 'inline; filename=%s' % filename)
         RESPONSE.write(result)
