@@ -1,0 +1,204 @@
+<div style="font-size: small; width:100%;" tal:define="portal_url nocall:context/portal_url;">
+  <center>
+    <img tal:attributes="src string:${portal_url}/logo.png"/>
+  </center>
+  <br>
+    <table style="width:100%;">
+      <tbody>
+        <tr>
+          <td>
+            <p>
+              <span tal:content="view/contact"></span><br>
+              <span tal:content="view/contactPhyAddr1"></span><br>
+              <span tal:content="view/contactPhyAddr2"></span><br>
+              <span tal:content="view/contactPhyAddr3"></span>
+            </p>
+          </td>
+          <td>
+            <p>
+              <span tal:content="view/lab"></span><br>
+              <span tal:content="view/labPhyAddr1"></span><br>
+              <span tal:content="view/labPhyAddr2"></span><br>
+              <span tal:content="view/labPhyAddr3"></span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <br>
+              <span tal:content="view/contactTaxNum"></span><br>
+              <span tal:content="view/contactPhone"></span><br>
+              <span tal:content="view/contactEmail"></span><br>
+          </td>
+          <td>
+            <br>
+              <span tal:content="view/labTaxNum"></span><br>
+              <span tal:content="view/labPhone"></span><br>
+              <span tal:content="view/labEmail"></span><br>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <hr>
+    <p style="text-align: center; font-size: x-large;">
+      <strong>Tax Invoice</strong></p>
+    <p style="text-align: center;">
+      <strong>Invoice</strong>&nbsp; <span tal:content="view/invoiceID"></span> - <span tal:content="view/invoiceDate"></span></p>
+    <p>
+      &nbsp;</p>
+    <table style="width:100%">
+      <tbody>
+        <tr>
+          <td>
+            <p>
+              Analysis Request: <a tal:attributes="href view/arURL"><span tal:content="view/requestId"></span></a><br>
+              Client Sample ID: <span tal:content="view/clientSampleId"></span><br>
+              Sample Type: <span tal:content="view/sampleType"></span>
+            </p>
+          </td>
+          <td>
+            <p>
+              Date Received: <span tal:content="view/dateReceived"></span><br>
+              Date Published: <span tal:content="view/datePublished"></span><br>
+              Sample Point: <span tal:content="view/samplePoint"></span>
+            </p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table style="width:100%; border-collapse: collapse; border: 0px solid black;">
+        <thead>
+        <tr style="border: 1px solid black;" style="border: 1px solid black;">
+            <th style="border: 1px solid black;" colspan="2" i18n:translate="">Analyses</th>
+            <th style="border: 1px solid black;" i18n:translate="">Price</th>
+            <th style="border: 1px solid black;" i18n:translate="">VAT</th>
+            <th style="border: 1px solid black;" i18n:translate="">Price incl VAT</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Displaying the analysis profiles. -->
+        <tal:profiles repeat="profile view/profiles">
+            <tal:profile>
+                <tr style="border: 1px solid black;" class="profile">
+                    <td style="border: 1px solid black;" colspan="2" class="profile" tal:content="profile/name"></td>
+                    <!-- If profile's checkbox "Use Analysis Profile Price" is enabled, the profile prices
+                    will be displayed.-->
+
+                    <td style="border: 1px solid black;" tal:condition="profile/price" class="currency">
+                        <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                        <span tal:content="profile/price">0.00</span>
+                    </td>
+                    <td style="border: 1px solid black;" tal:condition="profile/price" class="currency">
+                        <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                        <span tal:content="profile/priceVat">0.00</span>
+                    </td>
+                    <td style="border: 1px solid black;" tal:condition="profile/price" class="currency">
+                        <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                        <span tal:content="profile/priceTotal">0.00</span>
+                    </td>
+                </tr>
+                <!-- Displaying profile's analysis services -->
+                <tal:panalyses repeat="analysis profile/analyses">
+                    <tal:panalysis>
+                        <tr style="border: 1px solid black;" class="panalysis">
+                            <td style="border: 1px solid black;" colspan="2" class="title" tal:content="analysis/title">Title</td>
+                            <!-- Analysis price -->
+                            <td style="border: 1px solid black;" tal:condition="analysis/price" class="currency">
+                                <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                                <span tal:content="analysis/price">0.00</span>
+                            </td>
+                            <!-- Analysis VAT amount -->
+                            <td style="border: 1px solid black;" tal:condition="analysis/price" class="currency">
+                                <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                                <span tal:content="analysis/priceVat">0.00</span>
+                            </td>
+                            <!-- Analysis price + VAT amount -->
+                            <td style="border: 1px solid black;" tal:condition="analysis/price" class="currency">
+                                <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                                <span tal:content="analysis/priceTotal">0.00</span>
+                            </td>
+                        </tr>
+                    </tal:panalysis>
+                </tal:panalyses>
+            </tal:profile>
+        </tal:profiles>
+        <!-- Displaying solo analysis. -->
+        <tal:categories repeat="category view/analyses">
+            <tal:category>
+                <tr style="border: 1px solid black;" class="category">
+                    <td style="border: 1px solid black;" colspan="5" tal:content="category/name"></td>
+                </tr>
+                <tal:analyses repeat="analysis category/analyses">
+                    <tal:analysis>
+                        <tr>
+                            <td style="border: 1px solid black;" colspan="2" class="title" tal:content="analysis/title">Title</td>
+                            <!-- Analysis price -->
+                            <td style="border: 1px solid black;" class="currency">
+                                <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                                <span tal:content="analysis/price">0.00</span>
+                            </td>
+                            <!-- Analysis VAT amount -->
+                            <td style="border: 1px solid black;" class="currency">
+                                <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                                <span tal:content="analysis/priceVat">0.00</span>
+                            </td>
+                            <!-- Analysis price + VAT amount -->
+                            <td style="border: 1px solid black;" class="currency">
+                                <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                                <span tal:content="analysis/priceTotal">0.00</span>
+                            </td>
+                        </tr>
+                    </tal:analysis>
+                </tal:analyses>
+            </tal:category>
+        </tal:categories>
+        <!-- Table line containing subtotal prices -->
+        <tr style="border: 1px solid black;" class="totals">
+            <td style="border: 1px solid black;" colspan="2" class="title" i18n:translate="">Subtotal</td>
+            <td style="border: 1px solid black;" class="currency">
+                <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                <span tal:content="view/subtotal"></span>
+            </td>
+            <td style="border: 1px solid black;" class="currency">
+                <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                <span tal:content="view/subtotalVATAmount"></span>
+            </td>
+            <td style="border: 1px solid black;" class="currency">
+                <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                <span tal:content="view/subtotalTotalPrice"></span>
+            </td>
+        </tr>
+        <!-- Last table line containing total prices -->
+        <tr style="border: 1px solid black;" class="totals">
+            <td style="border: 1px solid black;" class="title" i18n:translate="">Total</td>
+            <td style="border: 1px solid black;" class="currency">
+                <span i18n:translate="">Discount %</span>
+                <span tal:content="view/memberDiscount"></span>
+            </td>
+            <td style="border: 1px solid black;" class="currency">
+                <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                <span >-</span>
+                <span tal:content="view/discountAmount"></span>
+            </td>
+            <td style="border: 1px solid black;" class="currency">
+                <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                <span tal:content="view/VATAmount"></span>
+            </td>
+            <td style="border: 1px solid black;" class="currency">
+                <span tal:content="python:view.getPreferredCurrencyAbreviation()">R</span>
+                <span tal:content="view/totalPrice"></span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+<br/><br/>
+    <p style="font-size: x-small;">
+      <strong>Bank information</strong><br />
+      <br />
+      Account holder: <span tal:content="view/bankAccName"></span><br />
+      Bank:           <span tal:content="view/bankName"></span><br />
+      Branch:         <span tal:content="view/bankBranch"></span><br />
+      Account number: <span tal:content="view/bankAccNumber"></span>
+    </p>
+  </div>

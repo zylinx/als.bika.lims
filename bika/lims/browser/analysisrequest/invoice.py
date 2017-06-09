@@ -1,6 +1,6 @@
 # This file is part of Bika LIMS
 #
-# Copyright 2011-2016 by it's authors.
+# Copyright 2011-2017 by it's authors.
 # Some rights reserved. See LICENSE.txt, AUTHORS.txt.
 
 from AccessControl import ClassSecurityInfo
@@ -15,7 +15,7 @@ from bika.lims.browser import BrowserView
 from bika.lims.config import VERIFIED_STATES
 from bika.lims.interfaces import IInvoiceView
 from bika.lims.permissions import *
-from bika.lims.utils import to_utf8, isAttributeHidden, encode_header
+from bika.lims.utils import to_utf8, isAttributeHidden, encode_header, createPdf
 from bika.lims.workflow import doActionFor, getTransitionDate
 from DateTime import DateTime
 from Products.Archetypes import PloneMessageFactory as PMF
@@ -196,9 +196,62 @@ class InvoiceView(BrowserView):
 class InvoicePrintView(InvoiceView):
 
     template = ViewPageTemplateFile("templates/analysisrequest_invoice_print.pt")
+    content  = ViewPageTemplateFile("templates/analysisrequest_invoice_pdf.pt")
 
     def __call__(self):
-        return InvoiceView.__call__(self)
+        context = self.context
+        invoice = context.getInvoice()
+        sample = context.getSample()
+        samplePoint = sample.getSamplePoint()
+        contact = context.getContact()
+
+        #Contact information
+        self.contact = contact.Title()
+        PhyAddr = contact.PhysicalAddress
+        self.contactPhyAddr1 = PhyAddr['address']
+        self.contactPhyAddr2 = PhyAddr['city']
+        self.contactPhyAddr3 = PhyAddr['country']
+        self.contactTaxNum = contact.getTaxNumber()
+        self.contactPhone = contact.getPhone()
+        self.contactEmail = contact.getEmailAddress()
+
+        #Client information
+        self.lab = context.getClient().Title()
+        PhyAddr = context.getClient().PhysicalAddress
+        self.labPhyAddr1 = PhyAddr['address']
+        self.labPhyAddr2 = PhyAddr['city']
+        self.labPhyAddr3 = PhyAddr['country']
+        self.labTaxNum = context.getClient().getTaxNumber()
+        self.labPhone = context.getClient().getPhone()
+        self.labEmail = context.getClient().getEmailAddress()
+
+        #AR Url
+        self.arURL = context.absolute_url()
+
+        #Invoice information
+        if invoice:
+            self.invoiceID = invoice.getId()
+            self.invoiceDate = invoice.invoiceDate()
+        else:
+            self.invoiceID = _('Proforma')
+            self.invoiceDate = _('Not yet invoiced')
+
+        #Bank information
+        self.bankAccName = context.getClient().Title()
+        self.bankName = context.getClient().getBankName()
+        self.bankBranch = context.getClient().getBankBranch()
+        self.bankAccNumber = context.getClient().getAccountNumber()
+
+        ivv = InvoiceView.__call__(self)
+
+        pdf = createPdf(ivv)
+        setheader = self.request.RESPONSE.setHeader
+        setheader('Content-Type', 'application/pdf')
+        setheader("Content-Disposition",
+                  "attachment;filename=invoice.pdf")
+        self.request.RESPONSE.write(pdf)
+
+        return ivv
 
 class InvoiceCreate(InvoiceView):
     """
